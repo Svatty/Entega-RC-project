@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Rotation to ESP32</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    h1 {
+      color: #4CAF50;
+    }
+    p {
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Phone Rotation Data</h1>
+  <p>Move your phone to test the rotation!</p>
+
+  <p id="rotationData">Waiting for rotation data...</p>
+
+  <script>
+    if (window.DeviceOrientationEvent) {
+      // Listen to device orientation events (gyro data)
+      window.addEventListener("deviceorientation", function(event) {
+        const yaw = event.alpha;  // Z-axis rotation (compass direction)
+        const pitch = event.beta; // X-axis rotation (front/back tilt)
+        const roll = event.gamma;  // Y-axis rotation (side tilt)
+
+        // Display rotation data on the page
+        document.getElementById("rotationData").innerHTML = 
+          `Yaw: ${yaw}° <br> Pitch: ${pitch}° <br> Roll: ${roll}°`;
+
+        // Send rotation data to ESP32 via HTTP GET request
+        const esp32IP = "http://<ESP32_IP>/update";  // Replace with your ESP32's IP address
+        fetch(`${esp32IP}?yaw=${yaw}&pitch=${pitch}&roll=${roll}`)
+          .then(response => response.text())
+          .then(data => console.log(data))
+          .catch(error => console.error('Error:', error));
+      });
+    } else {
+      alert("Device orientation is not supported on this device.");
+    }
+  </script>
+
+</body>
+</html>
