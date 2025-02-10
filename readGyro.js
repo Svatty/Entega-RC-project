@@ -1,5 +1,5 @@
 let ws;
-let laptopIp = ""; // Change this to your laptop's local IP
+let laptopIp = document.getElementById("laptopIP").value.trim(); // Change this to your laptop's local IP
 const wsPort = 443;  // Ensure the server is listening on this port
 const wsUrl = `wss://${laptopIp}:${wsPort}/esp32`;  // Secure WebSocket with /esp32 path for ESP32
 const reconnectInterval = 5000; // Attempt reconnect every 5 seconds
@@ -7,7 +7,7 @@ let lastYaw = 0, lastPitch = 0, lastRoll = 0; // Track last sent values
 
 // Function to connect to the laptop WebSocket server
 function connectWebSocket() {
-    laptopIP = document.getElementById("espIp").value.trim();
+    //laptopIP = document.getElementById("espIp").value.trim();
     console.log("Connecting to:", wsUrl);
     
     ws = new WebSocket(wsUrl);
