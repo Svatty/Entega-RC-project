@@ -1,42 +1,33 @@
 let ws;
-let esp32Ip = "";
+let laptopIp = "172.30.161.97"; // Change this to your laptop's local IP
 
-// Function to connect to ESP32 WebSocket
+// Function to connect to the laptop WebSocket server
 function connectWebSocket() {
-    esp32Ip = document.getElementById("esp32Ip").value.trim();
-    if (!esp32Ip) {
-        alert("Please enter the ESP32 IP address!");
-        return;
-    }
-
-    const wsUrl = `wss://${esp32Ip}:81/`;
+    const wsUrl = `wss://${laptopIp}:443`;  // Connect to your laptop relay server
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
-        console.log("Connected to ESP32 WebSocket");
-        document.getElementById("status").innerText = "Connected";
+        console.log("Connected to Laptop WebSocket Relay");
+        document.getElementById("status").innerText = "Connected to Laptop Relay";
     };
 
     ws.onmessage = function (event) {
-        console.log("ESP32 says:", event.data);
+        console.log("Laptop Relay Response:", event.data);
     };
 
     ws.onclose = function () {
-        console.log("Disconnected from ESP32");
+        console.log("Disconnected from Laptop Relay");
         document.getElementById("status").innerText = "Disconnected";
     };
 }
 
-// Function to send gyro data to ESP32
+// Function to send gyro data to the laptop WebSocket relay
 function sendGyroData(yaw, pitch, roll) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         const data = { yaw, pitch, roll };
         ws.send(JSON.stringify(data));
-    } else if (esp32Ip) {
-        fetch(`http://${esp32Ip}/update?yaw=${yaw}&pitch=${pitch}&roll=${roll}`)
-            .then(response => response.text())
-            .then(data => console.log("ESP32 Response:", data))
-            .catch(error => console.error("Error:", error));
+    } else {
+        console.error("WebSocket not connected!");
     }
 }
 
@@ -51,9 +42,12 @@ if (window.DeviceOrientationEvent) {
         document.getElementById("rotationData").innerHTML = 
             `Yaw: ${yaw.toFixed(2)}° <br> Pitch: ${pitch.toFixed(2)}° <br> Roll: ${roll.toFixed(2)}°`;
 
-        // Send data to ESP32
+        // Send data to Laptop Relay
         sendGyroData(yaw, pitch, roll);
     });
 } else {
     alert("Device orientation is not supported on this device.");
 }
+
+// Call connectWebSocket when the page loads
+connectWebSocket();
