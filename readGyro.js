@@ -1,6 +1,6 @@
 let ws;
 let laptopIp = "172.30.161.97"; // Change this to your laptop's local IP
-const wsPort = 8080; // Use 8080 for local WebSocket testing (443 for HTTPS)
+const wsPort = 8080; // WebSocket server port (ensure the server is listening on this port)
 const reconnectInterval = 5000; // Attempt reconnect every 5 seconds
 let lastYaw = 0, lastPitch = 0, lastRoll = 0; // Track last sent values
 
@@ -18,6 +18,8 @@ function connectWebSocket() {
 
     ws.onmessage = function (event) {
         console.log("💻 Laptop Relay Response:", event.data);
+        // You can add code here to process server responses if needed
+        document.getElementById("status").innerText = `Server Message: ${event.data}`;
     };
 
     ws.onclose = function () {
@@ -37,7 +39,7 @@ function sendGyroData(yaw, pitch, roll) {
         // Only send data if change is significant (to reduce network traffic)
         if (Math.abs(yaw - lastYaw) > 1 || Math.abs(pitch - lastPitch) > 1 || Math.abs(roll - lastRoll) > 1) {
             const data = { yaw, pitch, roll };
-            ws.send(JSON.stringify(data));
+            ws.send(JSON.stringify(data)); // Send JSON data to the WebSocket server
             lastYaw = yaw;
             lastPitch = pitch;
             lastRoll = roll;
