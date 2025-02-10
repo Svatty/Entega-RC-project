@@ -9,7 +9,7 @@ function connectWebSocket() {
         return;
     }
 
-    const wsUrl = `ws://${esp32Ip}:81/`;
+    const wsUrl = `wss://${esp32Ip}:81/`;
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
