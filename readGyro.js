@@ -1,15 +1,33 @@
 let ws;
-let laptopIp = document.getElementById("laptopIP").value.trim(); // Change this to your laptop's local IP
+let laptopIp = ""; // This will be set dynamically
 const wsPort = 443;  // Ensure the server is listening on this port
-const wsUrl = `wss://${laptopIp}:${wsPort}/esp32`;  // Secure WebSocket with /esp32 path for ESP32
 const reconnectInterval = 5000; // Attempt reconnect every 5 seconds
 let lastYaw = 0, lastPitch = 0, lastRoll = 0; // Track last sent values
 
+// Function to update the laptop IP dynamically
+function updateLaptopIp() {
+    const newIp = document.getElementById("laptopIP").value.trim();
+    if (newIp) {
+        laptopIp = newIp;
+        console.log("🔄 Updated Laptop IP to:", laptopIp);
+        connectWebSocket();  // Reconnect with the new IP
+    } else {
+        console.error("⚠ No IP entered! Please enter the server IP.");
+        alert("Please enter a valid server IP before connecting.");
+    }
+}
+
 // Function to connect to the laptop WebSocket server
 function connectWebSocket() {
-    //laptopIP = document.getElementById("espIp").value.trim();
+    if (!laptopIp) {
+        console.warn("⚠ No IP set. Enter the Laptop IP first!");
+        return;
+    }
+
+    // Dynamically generate wsUrl AFTER laptopIp is set
+    const wsUrl = `wss://${laptopIp}:${wsPort}/esp32`;
     console.log("Connecting to:", wsUrl);
-    
+
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
@@ -33,64 +51,7 @@ function connectWebSocket() {
     };
 }
 
-// Function to send gyro data efficiently
-function sendGyroData(yaw, pitch, roll) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        if (Math.abs(yaw - lastYaw) > 1 || Math.abs(pitch - lastPitch) > 1 || Math.abs(roll - lastRoll) > 1) {
-            const data = { yaw, pitch, roll };
-            ws.send(JSON.stringify(data));  // Send JSON data to the WebSocket server
-            lastYaw = yaw;
-            lastPitch = pitch;
-            lastRoll = roll;
-        }
-    } else {
-        console.warn("⚠ WebSocket not connected!");
-    }
-}
-
-// Function to handle device motion permissions
-function requestGyroPermission() {
-    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission()
-            .then((response) => {
-                if (response === "granted") {
-                    window.addEventListener("deviceorientation", handleGyroData);
-                } else {
-                    alert("Gyro access denied. Enable motion & orientation access in settings.");
-                }
-            })
-            .catch(console.error);
-    } else {
-        window.addEventListener("deviceorientation", handleGyroData);
-    }
-}
-
-// Function to process gyro data
-function handleGyroData(event) {
-    const yaw = event.alpha || 0;  // Z-axis rotation (compass direction)
-    const pitch = event.beta || 0; // X-axis rotation (front/back tilt)
-    const roll = event.gamma || 0; // Y-axis rotation (side tilt)
-
-    // Display rotation data
-    document.getElementById("rotationData").innerHTML = 
-        `Yaw: ${yaw.toFixed(2)}° <br> Pitch: ${pitch.toFixed(2)}° <br> Roll: ${roll.toFixed(2)}°`;
-
-    // Send data to Laptop Relay
-    sendGyroData(yaw, pitch, roll);
-}
-
-// Function to update the laptop IP dynamically
-function updateLaptopIp() {
-    const newIp = document.getElementById("laptopIp").value.trim();
-    if (newIp) {
-        laptopIp = newIp;
-        console.log("🔄 Updated Laptop IP to:", laptopIp);
-        connectWebSocket();
-    }
-}
-
-// Auto-connect on page load
+// Auto-connect on page load (but only if an IP is set)
 document.addEventListener("DOMContentLoaded", function () {
-    connectWebSocket();
     requestGyroPermission();
 });
