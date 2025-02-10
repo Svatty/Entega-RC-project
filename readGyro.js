@@ -7,6 +7,7 @@ let lastYaw = 0, lastPitch = 0, lastRoll = 0; // Track last sent values
 
 // Function to connect to the laptop WebSocket server
 function connectWebSocket() {
+    laptopIP = document.getElementById("espIp").value.trim();
     console.log("Connecting to:", wsUrl);
     
     ws = new WebSocket(wsUrl);
