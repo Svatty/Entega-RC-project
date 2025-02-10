@@ -1,53 +1,95 @@
 let ws;
 let laptopIp = "172.30.161.97"; // Change this to your laptop's local IP
+const wsPort = 8080; // Use 8080 for local WebSocket testing (443 for HTTPS)
+const reconnectInterval = 5000; // Attempt reconnect every 5 seconds
+let lastYaw = 0, lastPitch = 0, lastRoll = 0; // Track last sent values
 
 // Function to connect to the laptop WebSocket server
 function connectWebSocket() {
-    const wsUrl = `wss://${laptopIp}:443`;  // Connect to your laptop relay server
+    const wsUrl = `ws://${laptopIp}:${wsPort}`;  // Use ws:// for local connections
+    console.log("Connecting to:", wsUrl);
+    
     ws = new WebSocket(wsUrl);
 
     ws.onopen = function () {
-        console.log("Connected to Laptop WebSocket Relay");
+        console.log("✅ Connected to Laptop WebSocket Relay");
         document.getElementById("status").innerText = "Connected to Laptop Relay";
     };
 
     ws.onmessage = function (event) {
-        console.log("Laptop Relay Response:", event.data);
+        console.log("💻 Laptop Relay Response:", event.data);
     };
 
     ws.onclose = function () {
-        console.log("Disconnected from Laptop Relay");
-        document.getElementById("status").innerText = "Disconnected";
+        console.warn("❌ Disconnected from Laptop Relay. Retrying in 5s...");
+        document.getElementById("status").innerText = "Disconnected. Reconnecting...";
+        setTimeout(connectWebSocket, reconnectInterval);
+    };
+
+    ws.onerror = function (error) {
+        console.error("⚠ WebSocket Error:", error);
     };
 }
 
-// Function to send gyro data to the laptop WebSocket relay
+// Function to send gyro data efficiently
 function sendGyroData(yaw, pitch, roll) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-        const data = { yaw, pitch, roll };
-        ws.send(JSON.stringify(data));
+        // Only send data if change is significant (to reduce network traffic)
+        if (Math.abs(yaw - lastYaw) > 1 || Math.abs(pitch - lastPitch) > 1 || Math.abs(roll - lastRoll) > 1) {
+            const data = { yaw, pitch, roll };
+            ws.send(JSON.stringify(data));
+            lastYaw = yaw;
+            lastPitch = pitch;
+            lastRoll = roll;
+        }
     } else {
-        console.error("WebSocket not connected!");
+        console.warn("⚠ WebSocket not connected!");
     }
 }
 
-// Listen to device orientation events (gyro data)
-if (window.DeviceOrientationEvent) {
-    window.addEventListener("deviceorientation", function (event) {
-        const yaw = event.alpha || 0;  // Z-axis rotation (compass direction)
-        const pitch = event.beta || 0; // X-axis rotation (front/back tilt)
-        const roll = event.gamma || 0; // Y-axis rotation (side tilt)
-
-        // Display rotation data
-        document.getElementById("rotationData").innerHTML = 
-            `Yaw: ${yaw.toFixed(2)}° <br> Pitch: ${pitch.toFixed(2)}° <br> Roll: ${roll.toFixed(2)}°`;
-
-        // Send data to Laptop Relay
-        sendGyroData(yaw, pitch, roll);
-    });
-} else {
-    alert("Device orientation is not supported on this device.");
+// Function to handle device motion permissions (required for iOS)
+function requestGyroPermission() {
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission()
+            .then((response) => {
+                if (response === "granted") {
+                    window.addEventListener("deviceorientation", handleGyroData);
+                } else {
+                    alert("Gyro access denied. Enable motion & orientation access in settings.");
+                }
+            })
+            .catch(console.error);
+    } else {
+        window.addEventListener("deviceorientation", handleGyroData);
+    }
 }
 
-// Call connectWebSocket when the page loads
-connectWebSocket();
+// Function to process gyro data
+function handleGyroData(event) {
+    const yaw = event.alpha || 0;  // Z-axis rotation (compass direction)
+    const pitch = event.beta || 0; // X-axis rotation (front/back tilt)
+    const roll = event.gamma || 0; // Y-axis rotation (side tilt)
+
+    // Display rotation data
+    document.getElementById("rotationData").innerHTML = 
+        `Yaw: ${yaw.toFixed(2)}° <br> Pitch: ${pitch.toFixed(2)}° <br> Roll: ${roll.toFixed(2)}°`;
+
+    // Send data to Laptop Relay
+    sendGyroData(yaw, pitch, roll);
+}
+
+// Function to update the laptop IP dynamically
+function updateLaptopIp() {
+    const newIp = document.getElementById("laptopIp").value.trim();
+    if (newIp) {
+        laptopIp = newIp;
+        console.log("🔄 Updated Laptop IP to:", laptopIp);
+        connectWebSocket();
+    }
+}
+
+// Auto-connect on page load
+document.addEventListener("DOMContentLoaded", function () {
+    connectWebSocket();
+    requestGyroPermission();
+});

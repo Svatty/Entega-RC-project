@@ -16,6 +16,11 @@
     p {
       font-size: 20px;
     }
+    input, button {
+      font-size: 18px;
+      padding: 10px;
+      margin: 5px;
+    }
   </style>
 </head>
 <body>
@@ -25,10 +30,12 @@
 
   <p id="rotationData">Waiting for rotation data...</p>
   
-  <input type="text" id="esp32Ip" placeholder="Enter ESP32 IP Address">
-  <button onclick="connectWebSocket()">Connect</button>
+  <input type="text" id="laptopIp" placeholder="Enter Laptop IP">
+  <button onclick="updateLaptopIp()">Update IP</button>
+  
   <p id="status">Not Connected</p>
 
   <script src="readGyro.js"></script>
+
 </body>
 </html>
