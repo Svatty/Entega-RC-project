@@ -1,5 +1,5 @@
 let ws;
-let laptopIp = "172.30.161.97"; // Change this to your laptop's local IP
+let laptopIp = ""; // Change this to your laptop's local IP
 const wsPort = 443;  // Ensure the server is listening on this port
 const wsUrl = `wss://${laptopIp}:${wsPort}/esp32`;  // Secure WebSocket with /esp32 path for ESP32
 const reconnectInterval = 5000; // Attempt reconnect every 5 seconds
