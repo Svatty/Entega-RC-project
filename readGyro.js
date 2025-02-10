@@ -1,12 +1,12 @@
 let ws;
 let laptopIp = "172.30.161.97"; // Change this to your laptop's local IP
-const wsPort = 8080; // WebSocket server port (ensure the server is listening on this port)
+const wsPort = 443;  // Ensure the server is listening on this port
+const wsUrl = `wss://${laptopIp}:${wsPort}/esp32`;  // Secure WebSocket with /esp32 path for ESP32
 const reconnectInterval = 5000; // Attempt reconnect every 5 seconds
 let lastYaw = 0, lastPitch = 0, lastRoll = 0; // Track last sent values
 
 // Function to connect to the laptop WebSocket server
 function connectWebSocket() {
-    const wsUrl = `ws://${laptopIp}:${wsPort}`;  // Use ws:// for local connections
     console.log("Connecting to:", wsUrl);
     
     ws = new WebSocket(wsUrl);
@@ -18,7 +18,6 @@ function connectWebSocket() {
 
     ws.onmessage = function (event) {
         console.log("💻 Laptop Relay Response:", event.data);
-        // You can add code here to process server responses if needed
         document.getElementById("status").innerText = `Server Message: ${event.data}`;
     };
 
@@ -36,10 +35,9 @@ function connectWebSocket() {
 // Function to send gyro data efficiently
 function sendGyroData(yaw, pitch, roll) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-        // Only send data if change is significant (to reduce network traffic)
         if (Math.abs(yaw - lastYaw) > 1 || Math.abs(pitch - lastPitch) > 1 || Math.abs(roll - lastRoll) > 1) {
             const data = { yaw, pitch, roll };
-            ws.send(JSON.stringify(data)); // Send JSON data to the WebSocket server
+            ws.send(JSON.stringify(data));  // Send JSON data to the WebSocket server
             lastYaw = yaw;
             lastPitch = pitch;
             lastRoll = roll;
@@ -49,7 +47,7 @@ function sendGyroData(yaw, pitch, roll) {
     }
 }
 
-// Function to handle device motion permissions (required for iOS)
+// Function to handle device motion permissions
 function requestGyroPermission() {
     if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
         DeviceMotionEvent.requestPermission()
